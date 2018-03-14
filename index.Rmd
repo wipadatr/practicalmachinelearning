@@ -1,5 +1,5 @@
 ---
-title: "Practical Machine Learning Course Project"
+title: "Practical Machine Learning Course Project (Week 4 Assignment)"
 author: "Wipada Treebumrungsak"
 date: "14 March 2018"
 output: html_document
@@ -9,22 +9,92 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
+## Introduction
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement – a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset).
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+## Data
 
-```{r cars}
-summary(cars)
+The training data for this project are available here:
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
+The test data are available here:
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+The data for this project come from this source: http://groupware.les.inf.puc-rio.br/har. If you use the document you create for this class for any purpose please cite them as they have been very generous in allowing their data to be used for this kind of assignment.
+
+## Environment Preparation
+First, to upload R libraries that are necessary for week4 assignment
+
+```{r environment}
+library(caret)
+library(rpart)
+library(rpart.plot)
+library(RColorBrewer)
+library(randomForest)
+
 ```
 
-## Including Plots
+## Data Loading and Cleaning
 
-You can also embed plots test test test, for example:
+- Download the data files from the Internet
+- Load data into two data frames. 
+- So, we have a training dataset and a 20 observations testing dataset
+- Remove NA columns and remove features that are not in test dataset
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r dataprep}
+UrlTrain <- "http://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+UrlTest  <- "http://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+
+# download the datasets
+dt_training <- read.csv(url(UrlTrain))
+dt_testing  <- read.csv(url(UrlTest))
+
+#Cleaning the data
+features <- names(dt_testing[,colSums(is.na(dt_testing)) == 0])[8:59]
+
+# Only use features used in testing cases.
+dt_training <- dt_training[,c(features,"classe")]
+dt_testing <- dt_testing[,c(features,"problem_id")]
+
+dim(dt_training); dim(dt_testing);
+
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+## Data Partition
+
+split data into a training data set (60% of the total cases) and a testing data set (40% of the total cases)
+
+```{r dataPartition}
+set.seed(12345)
+
+inTrain <- createDataPartition(dt_training$classe, p=0.6, list=FALSE)
+training <- dt_training[inTrain,]
+testing <- dt_training[-inTrain,]
+
+dim(training)
+```
+
+```{r dataPartition2}
+dim(testing)
+```
+
+
+## Build Decision Tree Model
+Using Decision Tree, the accuracy might not be high. 
+(Accuracy 80% is acceptable.)
+
+
+```{r decisiontree}
+modFitDT <- rpart(classe ~ ., data = training, method="class")
+rpart.plot(modFitDT)
+```
+
+
+## Predict Test Dataset with Decision Tree Model
+
+```{r predict_DT}
+set.seed(12345)
+
+prediction <- predict(modFitDT, testing, type = "class")
+confusionMatrix(prediction, testing$classe)
+```
+
