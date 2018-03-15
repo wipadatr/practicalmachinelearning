@@ -53,7 +53,7 @@ features <- names(dt_testing[,colSums(is.na(dt_testing)) == 0])[8:59]
 
 # Only use features used in testing cases.
 dt_training <- dt_training[,c(features,"classe")]
-dt_testing <- dt_testing[,c(features,"problem_id")]
+dt_testing <- dt_testing[,c(features)]
 
 dim(dt_training); dim(dt_testing);
 
@@ -78,7 +78,7 @@ dim(testing)
 ```
 
 
-## Build Decision Tree Model
+## Model A: Build Decision Tree Model
 Using Decision Tree, the accuracy might not be high. 
 (Accuracy 80% is acceptable.)
 
@@ -89,12 +89,49 @@ rpart.plot(modFitDT)
 ```
 
 
-## Predict Test Dataset with Decision Tree Model
+## Model A: Predict with Decision Tree Model
 
 ```{r predict_DT}
 set.seed(12345)
 
 prediction <- predict(modFitDT, testing, type = "class")
 confusionMatrix(prediction, testing$classe)
+```
+
+## Model B: Build Random Forest Model
+
+Using random forest, the out of sample error should be small. The error will be estimated using the 40% testing sample. We should expect an error estimate of < 3%.
+
+
+```{r build_RF}
+
+set.seed(12345)
+modFitRF <- randomForest(classe ~ ., data = training, ntree = 1000)
+
+```
+
+## Model B: Predict with Random Forest Model
+
+```{r predict_RF}
+
+prediction <- predict(modFitRF, testing, type = "class")
+confusionMatrix(prediction, testing$classe)
+
+```
+
+## Applying the Selected Model to the Test Data (pml-testing.csv)
+The accuracy of the 2 predictive modeling methods above are:
+
+Decision Tree : 0.7267
+Random Forest : 0.9939
+
+So, the Random Forest model will be applied to predict the 20 quiz results (testing dataset) as shown below.
+
+
+```{r predictTest_RF}
+
+predictionRF <- predict(modFitRF, dt_testing, type = "class")
+predictionRF
+
 ```
 
